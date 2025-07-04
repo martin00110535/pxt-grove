@@ -351,27 +351,39 @@ namespace grove {
         //% dispData.min=0 dispData.max=9
         //% bitAddr.min=0 bitAddr.max=3
         //% group="4-Digit"
-        bit(dispData: number, bitAddr: number)
-        {
-            if((dispData == 0x7f) || ((dispData <= 9) && (bitAddr <= 3)))
-            {
-                let segData = 0;
-                
-                segData = this.coding(dispData);
-                this.start();
-                this.writeByte(0x44);
-                this.stop();
-                this.start();
-                this.writeByte(bitAddr | 0xc0);
-                this.writeByte(segData);
-                this.stop();
-                this.start();
-                this.writeByte(0x88 + this.brightnessLevel);
-                this.stop();
-                
-                this.buf[bitAddr] = dispData;
+        bit(dispData: number, bitAddr: number) {
+            // Encode new digit
+            const seg = this.coding(dispData);
+        
+            // Update buffer only if within valid bounds
+            if (bitAddr >= 0 && bitAddr <= 3) {
+                this.buf[bitAddr] = seg;
             }
+        
+            // Prepare buffer for bulk transfer
+            const segBuf: number[] = [];
+            for (let i = 0; i < 4; ++i) {
+                segBuf[i] = this.buf[i];
+            }
+        
+            // Auto-increment write
+            this.start();
+            this.writeByte(0x40); // auto-increment mode
+            this.stop();
+        
+            this.start();
+            this.writeByte(0xC0); // address for digit 0
+            for (let b of segBuf) {
+                this.writeByte(b);
+            }
+            this.stop();
+        
+            // Set brightness
+            this.start();
+            this.writeByte(0x88 + this.brightnessLevel); // display control command
+            this.stop();
         }
+
         
         /**
          * Turn on or off the colon point on Grove - 4-Digit Display
