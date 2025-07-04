@@ -351,38 +351,38 @@ namespace grove {
         //% dispData.min=0 dispData.max=9
         //% bitAddr.min=0 bitAddr.max=3
         //% group="4-Digit"
-        bit(dispData: number, bitAddr: number) {
-            // Encode new digit
-            const seg = this.coding(dispData);
-        
-            // Update buffer only if within valid bounds
+         bit(dispData: number, bitAddr: number) {
+            // Check digit range
             if (bitAddr >= 0 && bitAddr <= 3) {
-                this.buf[bitAddr] = seg;
-            }
+                // Encode the segment directly
+                const newSeg = TubeTab[dispData] | (this.pointFlag ? 0x80 : 0);
         
-            // Prepare buffer for bulk transfer
-            const segBuf: number[] = [];
-            for (let i = 0; i < 4; ++i) {
-                segBuf[i] = this.buf[i];
+                // Only refresh if there's a change
+                if (this.buf[bitAddr] !== newSeg) {
+                    this.buf[bitAddr] = newSeg;
+                    this.refreshDisplay();
+                }
             }
+        }
         
-            // Auto-increment write
+        // Add this method inside your TM1637 class
+        private refreshDisplay() {
             this.start();
-            this.writeByte(0x40); // auto-increment mode
+            this.writeByte(0x40); // auto-increment address mode
             this.stop();
         
             this.start();
-            this.writeByte(0xC0); // address for digit 0
-            for (let b of segBuf) {
-                this.writeByte(b);
+            this.writeByte(0xC0); // starting at digit 0
+            for (let i = 0; i < 4; i++) {
+                this.writeByte(this.buf[i]); // already encoded segment data
             }
             this.stop();
         
-            // Set brightness
             this.start();
-            this.writeByte(0x88 + this.brightnessLevel); // display control command
+            this.writeByte(0x88 + this.brightnessLevel); // brightness control
             this.stop();
         }
+
 
         
         /**
