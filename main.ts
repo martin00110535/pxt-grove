@@ -592,7 +592,7 @@ namespace grove {
     {
         let display = new TM1637();
         
-        display.buf = pins.createBuffer(8);
+        display.buf = pins.createBuffer(128);
         display.clkPin = clkPin;
         display.dataPin = dataPin;
         display.brightnessLevel = 0;
